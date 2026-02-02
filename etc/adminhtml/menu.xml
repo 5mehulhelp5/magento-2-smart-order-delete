@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Thinkbeat_SmartOrderDelete::root" title="Deleted Orders" module="Thinkbeat_SmartOrderDelete" sortOrder="100" parent="Magento_Sales::sales" resource="Thinkbeat_SmartOrderDelete::root"/>
+        <add id="Thinkbeat_SmartOrderDelete::trash" title="Trash Bin" module="Thinkbeat_SmartOrderDelete" sortOrder="10" parent="Thinkbeat_SmartOrderDelete::root" action="thinkbeat_smartdelete/trash/index" resource="Thinkbeat_SmartOrderDelete::trash"/>
+        <add id="Thinkbeat_SmartOrderDelete::logs" title="Deletion Logs" module="Thinkbeat_SmartOrderDelete" sortOrder="20" parent="Thinkbeat_SmartOrderDelete::root" action="thinkbeat_smartdelete/logs/index" resource="Thinkbeat_SmartOrderDelete::logs"/>
+    </menu>
+</config>

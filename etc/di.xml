@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    
+    <!-- Map Data Source Names to Collection Classes -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="thinkbeat_smartdelete_trash_listing_data_source" xsi:type="string">Thinkbeat\SmartOrderDelete\Model\ResourceModel\Trash\Grid\Collection</item>
+                <item name="thinkbeat_smartdelete_logs_listing_data_source" xsi:type="string">Thinkbeat\SmartOrderDelete\Model\ResourceModel\Log\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Collection for Trash Grid -->
+    <virtualType name="Thinkbeat\SmartOrderDelete\Model\ResourceModel\Trash\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">thinkbeat_smart_order_delete_trash</argument>
+            <argument name="resourceModel" xsi:type="string">Thinkbeat\SmartOrderDelete\Model\ResourceModel\Trash</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Collection for Logs Grid -->
+    <virtualType name="Thinkbeat\SmartOrderDelete\Model\ResourceModel\Log\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">thinkbeat_smart_order_delete_log</argument>
+            <argument name="resourceModel" xsi:type="string">Thinkbeat\SmartOrderDelete\Model\ResourceModel\Log</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Console Commands -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="thinkbeat_smartdelete_delete_orders" xsi:type="object">Thinkbeat\SmartOrderDelete\Console\Command\DeleteOrdersCommand</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

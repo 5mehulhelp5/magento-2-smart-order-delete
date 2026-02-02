@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/declaration.xsd">
+    <table name="thinkbeat_smart_order_delete_trash" resource="default" engine="innodb" comment="Order Trash Bin">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="Original Order ID"/>
+        <column xsi:type="varchar" name="increment_id" nullable="false" length="50" comment="Order Increment ID"/>
+        <column xsi:type="decimal" name="grand_total" scale="4" precision="20" comment="Grand Total"/>
+        <column xsi:type="varchar" name="order_status" nullable="true" length="32" comment="Order Status"/>
+        <column xsi:type="varchar" name="customer_email" nullable="true" length="128" comment="Customer Email"/>
+        <column xsi:type="text" name="order_data" nullable="false" comment="Serialized Order Data"/>
+        <column xsi:type="varchar" name="deleted_by" nullable="true" length="100" comment="Deleted By"/>
+        <column xsi:type="timestamp" name="deleted_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Deleted At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="THINKBEAT_ORDER_DELETE_TRASH_INCREMENT_ID" indexType="btree">
+            <column name="increment_id"/>
+        </index>
+        <index referenceId="THINKBEAT_ORDER_DELETE_TRASH_EMAIL" indexType="btree">
+            <column name="customer_email"/>
+        </index>
+    </table>
+    
+    <table name="thinkbeat_smart_order_delete_log" resource="default" engine="innodb" comment="Deletion Audit Log">
+        <column xsi:type="int" name="log_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Log ID"/>
+        <column xsi:type="varchar" name="admin_user" nullable="true" length="100" comment="Admin User"/>
+        <column xsi:type="varchar" name="order_increment_id" nullable="false" length="50" comment="Order Increment ID"/>
+        <column xsi:type="varchar" name="action_type" nullable="false" length="32" comment="Action Type (Soft Delete, Hard Delete, Restore)"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="text" name="details" nullable="true" comment="Additional Details"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="log_id"/>
+        </constraint>
+        <index referenceId="THINKBEAT_ORDER_DELETE_LOG_ACTION" indexType="btree">
+            <column name="action_type"/>
+        </index>
+    </table>
+</schema>

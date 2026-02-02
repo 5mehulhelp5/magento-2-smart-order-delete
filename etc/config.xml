@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <thinkbeat_smartdelete>
+            <general>
+                <enabled>1</enabled>
+                <soft_delete_enabled>1</soft_delete_enabled>
+            </general>
+            <cleanup>
+                <auto_purge_enabled>0</auto_purge_enabled>
+                <auto_purge_days>30</auto_purge_days>
+            </cleanup>
+            <auto_delete>
+                <enabled>0</enabled>
+                <retention_period>30</retention_period>
+            </auto_delete>
+        </thinkbeat_smartdelete>
+    </default>
+</config>
