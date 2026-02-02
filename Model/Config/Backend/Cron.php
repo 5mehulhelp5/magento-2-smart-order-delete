@@ -14,8 +14,10 @@ class Cron extends Value
 {
     /**
      * Cron string path
+     *
+     * @var string
      */
-    const CRON_STRING_PATH = 'thinkbeat_smartdelete/auto_delete/cron_expr';
+    private const CRON_STRING_PATH = 'thinkbeat_smartdelete/auto_delete/cron_expr';
 
     /**
      * @var ValueFactory
@@ -55,7 +57,7 @@ class Cron extends Value
      * After save handler
      *
      * @return $this
-     * @throws \Exception
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function afterSave()
     {
@@ -64,8 +66,8 @@ class Cron extends Value
 
         if ($time && $frequency) {
             $cronExprArray = [
-                intval($time[1]), // Minute
-                intval($time[0]), // Hour
+                (int)$time[1], // Minute
+                (int)$time[0], // Hour
                 $frequency == \Magento\Cron\Model\Config\Source\Frequency::CRON_MONTHLY ? '1' : '*', // Day of Month
                 '*', // Month
                 $frequency == \Magento\Cron\Model\Config\Source\Frequency::CRON_WEEKLY ? '1' : '*', // Day of Week
@@ -83,7 +85,7 @@ class Cron extends Value
                     self::CRON_STRING_PATH
                 )->save();
             } catch (\Exception $e) {
-                throw new \Exception(__('We can\'t save the cron expression.'));
+                throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t save the cron expression.'));
             }
         }
 
