@@ -50,7 +50,7 @@
                 <field id="schedule" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Schedule For</label>
                     <source_model>Magento\Cron\Model\Config\Source\Frequency</source_model>
-                    <backend_model>Magento\Cron\Model\Config\Backend\Sitemap</backend_model>
+                    <backend_model>Thinkbeat\SmartOrderDelete\Model\Config\Backend\Cron</backend_model>
                     <comment>Set up the schedule in which orders are deleted automatically. (Uses default System Cron)</comment>
                 </field>
                  <field id="time" translate="label" sortOrder="20" type="time" showInDefault="1" showInWebsite="1" showInStore="1">
