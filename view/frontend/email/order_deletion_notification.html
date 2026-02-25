@@ -1,0 +1,17 @@
+<!--@subject Order Deletion Report @-->
+<!--@vars {
+"var count":"Number of deleted orders",
+"var details":"Details of operation"
+} @-->
+
+{{template config_path="design/email/header_template"}}
+
+<p class="greeting">{{trans "Hello,"}}</p>
+<p>
+    {{trans "The automatic order deletion process has completed."}}
+</p>
+<p>
+    {{trans "Total Orders Deleted: %count" count=$count}}
+</p>
+
+{{template config_path="design/email/footer_template"}}

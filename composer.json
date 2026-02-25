@@ -1,0 +1,26 @@
+{
+    "name": "thinkbeat/module-smart-order-delete",
+    "description": "Smart Order Delete Module for Magento 2",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": [
+        "OSL-3.0",
+        "AFL-3.0"
+    ],
+    "require": {
+        "php": "~8.1.0||~8.2.0||~8.3.0||~8.4.0",
+        "magento/framework": "*",
+        "magento/module-sales": "*",
+        "magento/module-store": "*",
+        "magento/module-backend": "*",
+        "magento/module-ui": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Thinkbeat\\SmartOrderDelete\\": ""
+        }
+    }
+}

@@ -1,0 +1,43 @@
+<?php
+/** @var \Thinkbeat\SmartOrderDelete\Block\Adminhtml\System\Config\RunManually $block */
+?>
+<script>
+    require([
+        'jquery',
+        'Magento_Ui/js/modal/confirm',
+        'prototype'
+    ], function(jQuery, confirm){
+        var runSpan = jQuery('#thinkbeat_run_manually_span');
+
+        window.runAutoDelete = function () {
+            confirm({
+                content: <?= /* @noEscape */ json_encode(
+                    (string)__('Are you sure you want to run the automatic deletion process manually ' .
+                    'according to the current configuration?')
+                ) ?>,
+                actions: {
+                    confirm: function () {
+                        new Ajax.Request(
+                            '<?= /* @noEscape */ $block->escapeUrl($block->getAjaxUrl()); // phpcs:ignore Magento2.Legacy.EscapeMethodsOnBlockClass.Found, Generic.Files.LineLength.TooLong ?>',
+                            {
+                                loaderArea: true,
+                                asynchronous: true,
+                                parameters: {'form_key': FORM_KEY},
+                            onSuccess: function(transport) {
+                                var response = JSON.parse(transport.responseText);
+                                if (response.success) {
+                                     alert('Completed: ' + response.message);
+                                } else {
+                                     alert('Error: ' + response.message);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<?= /* @noEscape */ $block->getButtonHtml() ?>
+<span id="thinkbeat_run_manually_span"></span>
