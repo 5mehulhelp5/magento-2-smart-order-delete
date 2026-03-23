@@ -9,6 +9,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Data\Collection\AbstractDb;
+use Magento\Framework\App\Config\Storage\WriterInterface;
 
 class Cron extends Value
 {
@@ -20,9 +21,9 @@ class Cron extends Value
     private const CRON_STRING_PATH = 'thinkbeat_smartdelete/auto_delete/cron_expr';
 
     /**
-     * @var ValueFactory
+     * @var WriterInterface
      */
-    protected $_configValueFactory;
+    protected $configWriter;
 
     /**
      * @var string
@@ -34,7 +35,7 @@ class Cron extends Value
      * @param Registry $registry
      * @param ScopeConfigInterface $config
      * @param TypeListInterface $cacheTypeList
-     * @param ValueFactory $configValueFactory
+     * @param WriterInterface $configWriter
      * @param AbstractResource $resource
      * @param AbstractDb $resourceCollection
      * @param array $data
@@ -44,12 +45,12 @@ class Cron extends Value
         Registry $registry,
         ScopeConfigInterface $config,
         TypeListInterface $cacheTypeList,
-        ValueFactory $configValueFactory,
+        WriterInterface $configWriter,
         AbstractResource $resource = null,
         AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-        $this->_configValueFactory = $configValueFactory;
+        $this->configWriter = $configWriter;
         parent::__construct($context, $registry, $config, $cacheTypeList, $resource, $resourceCollection, $data);
     }
 
@@ -65,9 +66,12 @@ class Cron extends Value
         $frequency = $this->getData('groups/auto_delete/fields/schedule/value');
 
         if ($time && $frequency) {
+            if (is_string($time)) {
+                $time = explode(',', $time);
+            }
             $cronExprArray = [
-                (int)$time[1], // Minute
-                (int)$time[0], // Hour
+                isset($time[1]) ? (int)$time[1] : 0, // Minute
+                isset($time[0]) ? (int)$time[0] : 0, // Hour
                 $frequency == \Magento\Cron\Model\Config\Source\Frequency::CRON_MONTHLY ? '1' : '*', // Day of Month
                 '*', // Month
                 $frequency == \Magento\Cron\Model\Config\Source\Frequency::CRON_WEEKLY ? '1' : '*', // Day of Week
@@ -76,14 +80,12 @@ class Cron extends Value
             $cronExprString = join(' ', $cronExprArray);
 
             try {
-                $this->_configValueFactory->create()->load(
+                $this->configWriter->save(
                     self::CRON_STRING_PATH,
-                    'path'
-                )->setValue(
-                    $cronExprString
-                )->setPath(
-                    self::CRON_STRING_PATH
-                )->save();
+                    $cronExprString,
+                    $this->getScope() ?: \Magento\Framework\App\Config\ScopeConfigInterface::SCOPE_TYPE_DEFAULT,
+                    $this->getScopeId() ?: 0
+                );
             } catch (\Exception $e) {
                 throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t save the cron expression.'));
             }

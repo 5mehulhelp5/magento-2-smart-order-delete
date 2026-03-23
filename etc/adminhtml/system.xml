@@ -70,7 +70,7 @@
                 </field>
                 <field id="customer_groups" translate="label" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Customer Group(s)</label>
-                    <source_model>Magento\Customer\Model\Config\Source\Group</source_model>
+                    <source_model>Thinkbeat\SmartOrderDelete\Model\Config\Source\CustomerGroup</source_model>
                 </field>
                 <field id="store_ids" translate="label" type="multiselect" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Store View(s)</label>
