@@ -2,21 +2,31 @@
 namespace Thinkbeat\SmartOrderDelete\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
-use Magento\Customer\Model\ResourceModel\Group\CollectionFactory;
+use Magento\Customer\Api\GroupRepositoryInterface;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 
 class CustomerGroup implements OptionSourceInterface
 {
     /**
-     * @var CollectionFactory
+     * @var GroupRepositoryInterface
      */
-    protected $groupCollectionFactory;
+    protected $groupRepository;
 
     /**
-     * @param CollectionFactory $groupCollectionFactory
+     * @var SearchCriteriaBuilder
      */
-    public function __construct(CollectionFactory $groupCollectionFactory)
-    {
-        $this->groupCollectionFactory = $groupCollectionFactory;
+    protected $searchCriteriaBuilder;
+
+    /**
+     * @param GroupRepositoryInterface $groupRepository
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     */
+    public function __construct(
+        GroupRepositoryInterface $groupRepository,
+        SearchCriteriaBuilder $searchCriteriaBuilder
+    ) {
+        $this->groupRepository = $groupRepository;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
     }
 
     /**
@@ -26,14 +36,19 @@ class CustomerGroup implements OptionSourceInterface
      */
     public function toOptionArray()
     {
-        $collection = $this->groupCollectionFactory->create();
         $options = [];
-        
-        foreach ($collection as $group) {
-            $options[] = [
-                'value' => $group->getId(),
-                'label' => $group->getCustomerGroupCode()
-            ];
+        try {
+            $criteria = $this->searchCriteriaBuilder->create();
+            $groups = $this->groupRepository->getList($criteria);
+            
+            foreach ($groups->getItems() as $group) {
+                $options[] = [
+                    'value' => (string)$group->getId(), // cast to string to prevent '0' being evaluated as empty in some admin UI versions
+                    'label' => $group->getCode()
+                ];
+            }
+        } catch (\Exception $e) {
+            // Fallback empty if repository fails
         }
         
         return $options;
