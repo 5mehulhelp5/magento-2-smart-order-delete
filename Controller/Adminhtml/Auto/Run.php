@@ -5,8 +5,10 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Thinkbeat\SmartOrderDelete\Service\AutoDeleteService;
+use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 
-class Run extends Action
+class Run extends Action implements HttpGetActionInterface, HttpPostActionInterface
 {
     /**
      * Authorization level of a basic admin session
@@ -54,10 +56,10 @@ class Run extends Action
                 'success' => true,
                 'message' => (string)__('%1 orders processed/deleted.', $count)
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $result->setData([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()
             ]);
         }
     }

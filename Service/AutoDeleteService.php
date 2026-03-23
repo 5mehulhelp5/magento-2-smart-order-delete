@@ -105,13 +105,16 @@ class AutoDeleteService
         // Let's check config first.
         $countries = $this->getConfig('thinkbeat_smartdelete/auto_delete/shipping_countries');
         if ($countries) {
-             // Join shipping address
-             $collection->getSelect()->join(
-                 ['soa' => $collection->getTable('sales_order_address')],
-                 'main_table.entity_id = soa.parent_id AND soa.address_type = "shipping"',
+             $collection->getSelect()->joinLeft(
+                 ['soa_shipping' => $collection->getTable('sales_order_address')],
+                 'main_table.entity_id = soa_shipping.parent_id AND soa_shipping.address_type = "shipping"',
+                 []
+             )->joinLeft(
+                 ['soa_billing' => $collection->getTable('sales_order_address')],
+                 'main_table.entity_id = soa_billing.parent_id AND soa_billing.address_type = "billing"',
                  []
              )->where(
-                 'soa.country_id IN (?)',
+                 'COALESCE(soa_shipping.country_id, soa_billing.country_id) IN (?)',
                  explode(',', $countries)
              );
         }
