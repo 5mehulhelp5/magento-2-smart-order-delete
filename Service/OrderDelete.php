@@ -26,23 +26,89 @@ use Psr\Log\LoggerInterface;
  */
 class OrderDelete
 {
+    /**
+     * @var mixed
+     */
     protected $orderRepository;
+    /**
+     * @var mixed
+     */
     protected $orderResource;
+    /**
+     * @var mixed
+     */
     protected $trashFactory;
+    /**
+     * @var mixed
+     */
     protected $logFactory;
+    /**
+     * @var mixed
+     */
     protected $scopeConfig;
+    /**
+     * @var mixed
+     */
     protected $authSession;
+    /**
+     * @var mixed
+     */
     protected $json;
+    /**
+     * @var mixed
+     */
     protected $invoiceCollectionFactory;
+    /**
+     * @var mixed
+     */
     protected $shipmentCollectionFactory;
+    /**
+     * @var mixed
+     */
     protected $creditmemoCollectionFactory;
+    /**
+     * @var mixed
+     */
     protected $logger;
+    /**
+     * @var mixed
+     */
     protected $orderFactory;
+    /**
+     * @var mixed
+     */
     protected $orderItemFactory;
+    /**
+     * @var mixed
+     */
     protected $orderAddressFactory;
+    /**
+     * @var mixed
+     */
     protected $orderPaymentFactory;
+    /**
+     * @var mixed
+     */
     protected $orderStatusHistoryFactory;
 
+    /**
+     * @param OrderRepositoryInterface $orderRepository
+     * @param OrderResource $orderResource
+     * @param TrashFactory $trashFactory
+     * @param LogFactory $logFactory
+     * @param ScopeConfigInterface $scopeConfig
+     * @param AuthSession $authSession
+     * @param Json $json
+     * @param InvoiceCollectionFactory $invoiceCollectionFactory
+     * @param ShipmentCollectionFactory $shipmentCollectionFactory
+     * @param CreditmemoCollectionFactory $creditmemoCollectionFactory
+     * @param LoggerInterface $logger
+     * @param \Magento\Sales\Model\OrderFactory $orderFactory
+     * @param \Magento\Sales\Model\Order\ItemFactory $orderItemFactory
+     * @param \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory
+     * @param \Magento\Sales\Model\Order\PaymentFactory $orderPaymentFactory
+     * @param \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory
+     */
     public function __construct(
         OrderRepositoryInterface $orderRepository,
         OrderResource $orderResource,
@@ -85,7 +151,7 @@ class OrderDelete
      * Uses OrderResource::delete() directly to bypass Magento 2.4.7/2.4.8
      * repository-level state guards (CouldNotDeleteException / StateException).
      *
-     * @param int $orderId
+     * @param int|string $orderId
      * @return bool
      * @throws \Exception
      */
@@ -134,6 +200,9 @@ class OrderDelete
 
     /**
      * Move order data to trash table
+     *
+     * @param mixed $order
+     * @return mixed
      */
     protected function moveToTrash($order)
     {
@@ -222,6 +291,15 @@ class OrderDelete
     /**
      * Log the deletion action
      */
+    /**
+     * Log action
+     *
+     * @param string $incrementId
+     * @param string $action
+     * @param string $details
+     * @return void
+     */
+
     protected function logAction($incrementId, $action, $details = '')
     {
         $log = $this->logFactory->create();
@@ -235,6 +313,11 @@ class OrderDelete
     /**
      * Get admin username safely — works in cron/CLI context (no backend session).
      */
+    /**
+     * Get Admin Username
+     *
+     * @return string
+     */
     protected function getAdminUsername(): string
     {
         try {
@@ -247,6 +330,9 @@ class OrderDelete
 
     /**
      * Restore order from trash
+     *
+     * @param int|string $trashId
+     * @return bool
      */
     public function restoreOrder($trashId)
     {
@@ -362,11 +448,22 @@ class OrderDelete
         return true;
     }
 
+    /**
+     * Purge Trash
+     *
+     * @return void
+     */
     public function purgeTrash()
     {
         $this->logger->info('Purge Trash triggered but not implemented.');
     }
 
+    /**
+     * Delete Trash Item
+     *
+     * @param int|string $trashId
+     * @return void
+     */
     public function deleteTrashItem($trashId)
     {
         $trash = $this->trashFactory->create()->load($trashId);

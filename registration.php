@@ -4,7 +4,3 @@
     'Thinkbeat_SmartOrderDelete',
     __DIR__
 );
-
-
-
-
