@@ -9,11 +9,32 @@ use Magento\Store\Model\ScopeInterface;
 
 class AutoDeleteService
 {
+    /**
+     * @var ScopeConfigInterface
+     */
     protected $scopeConfig;
+
+    /**
+     * @var CollectionFactory
+     */
     protected $orderCollectionFactory;
+
+    /**
+     * @var OrderDelete
+     */
     protected $orderDeleteService;
+
+    /**
+     * @var LoggerInterface
+     */
     protected $logger;
 
+    /**
+     * @param ScopeConfigInterface $scopeConfig
+     * @param CollectionFactory $orderCollectionFactory
+     * @param OrderDelete $orderDeleteService
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         CollectionFactory $orderCollectionFactory,
@@ -136,6 +157,11 @@ class AutoDeleteService
         return $count;
     }
 
+    /**
+     * Check if module enabled
+     *
+     * @return bool
+     */
     protected function isModuleEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -144,6 +170,11 @@ class AutoDeleteService
         );
     }
 
+    /**
+     * Check if auto delete enabled
+     *
+     * @return bool
+     */
     protected function isAutoDeleteEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -152,6 +183,12 @@ class AutoDeleteService
         );
     }
 
+    /**
+     * Get Config
+     *
+     * @param string $path
+     * @return mixed
+     */
     protected function getConfig(string $path)
     {
         return $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE);
