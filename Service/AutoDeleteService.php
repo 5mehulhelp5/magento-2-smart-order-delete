@@ -77,34 +77,29 @@ class AutoDeleteService
 
         // 2. Order Status
         $statuses = $this->getConfig('thinkbeat_smartdelete/auto_delete/order_status');
-        if ($statuses) {
-            $collection->addFieldToFilter('status', ['in' => explode(',', $statuses)]);
+        if ($statuses !== null && $statuses !== '') {
+            $statusArray = is_array($statuses) ? $statuses : explode(',', (string)$statuses);
+            $collection->addFieldToFilter('status', ['in' => $statusArray]);
         }
 
         // 3. Customer Groups
         $groups = $this->getConfig('thinkbeat_smartdelete/auto_delete/customer_groups');
-        // Empty array might mean "All" depending on interpretation.
-        if ($groups !== null) {
-             // Multiselect logic: if unselected in Magento config, it returns null.
-             // Assuming if User doesn't select group, filter is ignored? Or nothing deleted?
-             // Usually "Select All" is required if they want all.
-             // Let's safe guard: if no groups selected, maybe require at least one filter?
-             // Actually standard Magento logic: if config is set, apply it.
-             $collection->addFieldToFilter('customer_group_id', ['in' => explode(',', $groups)]);
+        if ($groups !== null && $groups !== '') {
+             $groupArray = is_array($groups) ? $groups : explode(',', (string)$groups);
+             $collection->addFieldToFilter('customer_group_id', ['in' => $groupArray]);
         }
 
         // 4. Store Views
         $stores = $this->getConfig('thinkbeat_smartdelete/auto_delete/store_ids');
-        if ($stores !== null) {
-            $collection->addFieldToFilter('store_id', ['in' => explode(',', $stores)]);
+        if ($stores !== null && $stores !== '') {
+            $storeArray = is_array($stores) ? $stores : explode(',', (string)$stores);
+            $collection->addFieldToFilter('store_id', ['in' => $storeArray]);
         }
 
         // 5. Shipping Countries (Requires join)
-        // This is complex on flat order table vs address table join.
-        // For performance/simplicity, we iterate or join if critical.
-        // Let's check config first.
         $countries = $this->getConfig('thinkbeat_smartdelete/auto_delete/shipping_countries');
-        if ($countries) {
+        if ($countries !== null && $countries !== '') {
+             $countryArray = is_array($countries) ? $countries : explode(',', (string)$countries);
              $collection->getSelect()->joinLeft(
                  ['soa_shipping' => $collection->getTable('sales_order_address')],
                  'main_table.entity_id = soa_shipping.parent_id AND soa_shipping.address_type = "shipping"',
@@ -115,7 +110,7 @@ class AutoDeleteService
                  []
              )->where(
                  'COALESCE(soa_shipping.country_id, soa_billing.country_id) IN (?)',
-                 explode(',', $countries)
+                 $countryArray
              );
         }
 
@@ -134,7 +129,7 @@ class AutoDeleteService
             try {
                 $this->orderDeleteService->deleteOrder($order->getId());
                 $count++;
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $this->logger->error("Auto delete failed for Order {$order->getIncrementId()}: " . $e->getMessage());
             }
         }
