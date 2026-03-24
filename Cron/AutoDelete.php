@@ -39,7 +39,7 @@ class AutoDelete
             $this->logger->info("Thinkbeat SmartOrderDelete: Executing AutoDelete cron.");
             $count = $this->autoDeleteService->processAutoDelete();
             $this->logger->info("Thinkbeat SmartOrderDelete: Processed $count orders.");
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->error("Thinkbeat SmartOrderDelete AutoDelete cron failed: " . $e->getMessage());
         }
     }
