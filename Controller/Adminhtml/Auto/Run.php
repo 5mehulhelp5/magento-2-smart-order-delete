@@ -10,28 +10,11 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 
 class Run extends Action implements HttpGetActionInterface, HttpPostActionInterface
 {
-    /**
-     * Authorization level of a basic admin session
-     *
-     * @see _isAllowed()
-     */
     public const ADMIN_RESOURCE = 'Thinkbeat_SmartOrderDelete::config';
 
-    /**
-     * @var JsonFactory
-     */
     protected $resultJsonFactory;
-
-    /**
-     * @var AutoDeleteService
-     */
     protected $autoDeleteService;
 
-    /**
-     * @param Context $context
-     * @param JsonFactory $resultJsonFactory
-     * @param AutoDeleteService $autoDeleteService
-     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -43,15 +26,16 @@ class Run extends Action implements HttpGetActionInterface, HttpPostActionInterf
     }
 
     /**
-     * Execute action
-     *
-     * @return \Magento\Framework\Controller\Result\Json
+     * Execute manual run — passes $forceRun = true so the deletion proceeds
+     * even when "Enable Automatic Delete" is set to No in configuration.
      */
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
         try {
-            $count = $this->autoDeleteService->processAutoDelete();
+            // forceRun = true: bypass the isAutoDeleteEnabled() check.
+            // The admin explicitly clicked "Run Manually", so we always proceed.
+            $count = $this->autoDeleteService->processAutoDelete(true);
             return $result->setData([
                 'success' => true,
                 'message' => (string)__('%1 orders processed/deleted.', $count)

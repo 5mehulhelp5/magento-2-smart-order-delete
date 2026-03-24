@@ -2,6 +2,7 @@
 namespace Thinkbeat\SmartOrderDelete\Service;
 
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Thinkbeat\SmartOrderDelete\Model\TrashFactory;
 use Thinkbeat\SmartOrderDelete\Model\LogFactory;
@@ -12,110 +13,39 @@ use Magento\Sales\Model\ResourceModel\Order\Invoice\CollectionFactory as Invoice
 use Magento\Sales\Model\ResourceModel\Order\Shipment\CollectionFactory as ShipmentCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Creditmemo\CollectionFactory as CreditmemoCollectionFactory;
 use Psr\Log\LoggerInterface;
-use Magento\Framework\Registry;
 
+/**
+ * OrderDelete Service
+ *
+ * Magento 2.4.7+ / 2.4.8+ compatibility changes:
+ *  - Removed Magento\Framework\Registry (deprecated; isSecureArea never applied to orders)
+ *  - Replaced orderRepository->delete() with orderResource->delete() to bypass
+ *    repository-level CouldNotDeleteException / StateException guards added in 2.4.7+
+ *  - AuthSession::getUser() wrapped safely for cron/CLI context
+ *  - $order->getPaymentsCollection() replaced with $order->getPayment()
+ */
 class OrderDelete
 {
-    /**
-     * @var OrderRepositoryInterface
-     */
     protected $orderRepository;
-
-    /**
-     * @var TrashFactory
-     */
+    protected $orderResource;
     protected $trashFactory;
-
-    /**
-     * @var LogFactory
-     */
     protected $logFactory;
-
-    /**
-     * @var ScopeConfigInterface
-     */
     protected $scopeConfig;
-
-    /**
-     * @var AuthSession
-     */
     protected $authSession;
-
-    /**
-     * @var Json
-     */
     protected $json;
-
-    /**
-     * @var InvoiceCollectionFactory
-     */
     protected $invoiceCollectionFactory;
-
-    /**
-     * @var ShipmentCollectionFactory
-     */
     protected $shipmentCollectionFactory;
-
-    /**
-     * @var CreditmemoCollectionFactory
-     */
     protected $creditmemoCollectionFactory;
-
-    /**
-     * @var LoggerInterface
-     */
     protected $logger;
-
-    /**
-     * @var \Magento\Sales\Model\OrderFactory
-     */
     protected $orderFactory;
-
-    /**
-     * @var \Magento\Sales\Model\Order\ItemFactory
-     */
     protected $orderItemFactory;
-
-    /**
-     * @var \Magento\Sales\Model\Order\AddressFactory
-     */
     protected $orderAddressFactory;
-
-    /**
-     * @var \Magento\Sales\Model\Order\PaymentFactory
-     */
     protected $orderPaymentFactory;
-
-    /**
-     * @var \Magento\Sales\Model\Order\Status\HistoryFactory
-     */
     protected $orderStatusHistoryFactory;
 
-    /**
-     * @var Registry
-     */
-    protected $registry;
-
-    /**
-     * @param OrderRepositoryInterface $orderRepository
-     * @param TrashFactory $trashFactory
-     * @param LogFactory $logFactory
-     * @param ScopeConfigInterface $scopeConfig
-     * @param AuthSession $authSession
-     * @param Json $json
-     * @param InvoiceCollectionFactory $invoiceCollectionFactory
-     * @param ShipmentCollectionFactory $shipmentCollectionFactory
-     * @param CreditmemoCollectionFactory $creditmemoCollectionFactory
-     * @param LoggerInterface $logger
-     * @param \Magento\Sales\Model\OrderFactory $orderFactory
-     * @param \Magento\Sales\Model\Order\ItemFactory $orderItemFactory
-     * @param \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory
-     * @param \Magento\Sales\Model\Order\PaymentFactory $orderPaymentFactory
-     * @param \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory
-     * @param Registry $registry
-     */
     public function __construct(
         OrderRepositoryInterface $orderRepository,
+        OrderResource $orderResource,
         TrashFactory $trashFactory,
         LogFactory $logFactory,
         ScopeConfigInterface $scopeConfig,
@@ -129,10 +59,10 @@ class OrderDelete
         \Magento\Sales\Model\Order\ItemFactory $orderItemFactory,
         \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory,
         \Magento\Sales\Model\Order\PaymentFactory $orderPaymentFactory,
-        \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory,
-        Registry $registry
+        \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory
     ) {
         $this->orderRepository = $orderRepository;
+        $this->orderResource = $orderResource;
         $this->trashFactory = $trashFactory;
         $this->logFactory = $logFactory;
         $this->scopeConfig = $scopeConfig;
@@ -147,11 +77,13 @@ class OrderDelete
         $this->orderAddressFactory = $orderAddressFactory;
         $this->orderPaymentFactory = $orderPaymentFactory;
         $this->orderStatusHistoryFactory = $orderStatusHistoryFactory;
-        $this->registry = $registry;
     }
 
     /**
      * Delete order (Soft or Hard based on config)
+     *
+     * Uses OrderResource::delete() directly to bypass Magento 2.4.7/2.4.8
+     * repository-level state guards (CouldNotDeleteException / StateException).
      *
      * @param int $orderId
      * @return bool
@@ -159,21 +91,12 @@ class OrderDelete
      */
     public function deleteOrder($orderId)
     {
-        // Emulate Secure Area
-        $registeredSecure = false;
-        if (!$this->registry->registry('isSecureArea')) {
-            $this->registry->register('isSecureArea', true);
-            $registeredSecure = true;
-        }
-
         $trash = null;
 
         try {
+            /** @var \Magento\Sales\Model\Order $order */
             $order = $this->orderRepository->get($orderId);
             $incrementId = $order->getIncrementId();
-            $email = $order->getCustomerEmail();
-            $grandTotal = $order->getGrandTotal();
-            $status = $order->getStatus();
 
             $isSoftDelete = $this->scopeConfig->getValue(
                 'thinkbeat_smartdelete/general/soft_delete_enabled',
@@ -187,15 +110,14 @@ class OrderDelete
                 $actionType = 'Hard Delete';
             }
 
-            // Perform Hard Delete (it cascades usually)
-            $this->orderRepository->delete($order);
+            // Direct ResourceModel delete — bypasses repository-level
+            // CouldNotDeleteException / StateException added in Magento 2.4.7+.
+            $this->orderResource->delete($order);
 
-            // Log
             $this->logAction($incrementId, $actionType, 'Order deleted successfully.');
 
             return true;
         } catch (\Exception $e) {
-            // Rollback Trash if Soft Delete succeeded but Hard Delete failed
             if ($trash && $trash->getId()) {
                 try {
                     $trash->delete();
@@ -205,27 +127,18 @@ class OrderDelete
                     );
                 }
             }
-
             $this->logger->error('Error deleting order ' . $orderId . ': ' . $e->getMessage());
             throw $e;
-        } finally {
-            if ($registeredSecure) {
-                $this->registry->unregister('isSecureArea');
-            }
         }
     }
 
     /**
      * Move order data to trash table
-     *
-     * @param \Magento\Sales\Model\Order $order
-     * @return \Thinkbeat\SmartOrderDelete\Model\Trash
      */
     protected function moveToTrash($order)
     {
         $orderData = $order->getData();
-        
-        // Load Relations
+
         $items = [];
         foreach ($order->getItems() as $item) {
             $items[] = $item->getData();
@@ -241,9 +154,10 @@ class OrderDelete
         }
         $orderData['addresses'] = $addresses;
 
+        // FIX: use getPayment() instead of deprecated getPaymentsCollection()
         $payments = [];
-        foreach ($order->getPaymentsCollection() as $payment) {
-            $payments[] = $payment->getData();
+        if ($order->getPayment()) {
+            $payments[] = $order->getPayment()->getData();
         }
         $orderData['payments'] = $payments;
 
@@ -253,7 +167,6 @@ class OrderDelete
         }
         $orderData['status_history'] = $statusHistory;
 
-        // Load Invoices
         $invoices = [];
         $invoiceCollection = $this->invoiceCollectionFactory->create()->setOrderFilter($order);
         foreach ($invoiceCollection as $invoice) {
@@ -267,7 +180,6 @@ class OrderDelete
         }
         $orderData['invoices'] = $invoices;
 
-        // Load Shipments
         $shipments = [];
         $shipmentCollection = $this->shipmentCollectionFactory->create()->setOrderFilter($order);
         foreach ($shipmentCollection as $shipment) {
@@ -281,7 +193,6 @@ class OrderDelete
         }
         $orderData['shipments'] = $shipments;
 
-        // Load Creditmemos
         $creditmemos = [];
         $creditmemoCollection = $this->creditmemoCollectionFactory->create()->setOrderFilter($order);
         foreach ($creditmemoCollection as $creditmemo) {
@@ -302,31 +213,19 @@ class OrderDelete
         $trash->setOrderStatus($order->getStatus());
         $trash->setCustomerEmail($order->getCustomerEmail());
         $trash->setOrderData($this->json->serialize($orderData));
-        
-        $adminUser = $this->authSession->getUser();
-        $adminName = $adminUser ? $adminUser->getUsername() : 'System/CLI';
-        $trash->setDeletedBy($adminName);
-        
+        $trash->setDeletedBy($this->getAdminUsername());
         $trash->save();
-        
+
         return $trash;
     }
 
     /**
      * Log the deletion action
-     *
-     * @param string $incrementId
-     * @param string $action
-     * @param string $details
-     * @return void
      */
     protected function logAction($incrementId, $action, $details = '')
     {
         $log = $this->logFactory->create();
-        $adminUser = $this->authSession->getUser();
-        $adminName = $adminUser ? $adminUser->getUsername() : 'System/CLI';
-        
-        $log->setAdminUser($adminName);
+        $log->setAdminUser($this->getAdminUsername());
         $log->setOrderIncrementId($incrementId);
         $log->setActionType($action);
         $log->setDetails($details);
@@ -334,12 +233,20 @@ class OrderDelete
     }
 
     /**
+     * Get admin username safely — works in cron/CLI context (no backend session).
+     */
+    protected function getAdminUsername(): string
+    {
+        try {
+            $user = $this->authSession->getUser();
+            return $user ? $user->getUsername() : 'System/CLI';
+        } catch (\Throwable $e) {
+            return 'System/CLI';
+        }
+    }
+
+    /**
      * Restore order from trash
-     *
-     * @param int $trashId
-     * @return bool
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function restoreOrder($trashId)
     {
@@ -349,8 +256,7 @@ class OrderDelete
         }
 
         $orderData = $this->json->unserialize($trash->getOrderData());
-        
-        // Check if order with same Increment ID already exists
+
         if (isset($orderData['increment_id'])) {
             $existingOrder = $this->orderFactory->create()->loadByIncrementId($orderData['increment_id']);
             if ($existingOrder->getId()) {
@@ -360,10 +266,7 @@ class OrderDelete
             }
         }
 
-        // 1. Initialize Order
         $order = $this->orderFactory->create();
-        
-        // 2. Set Basic Data
         $originalId = $orderData['entity_id'] ?? null;
         $ignoredKeys = [
             'entity_id', 'items', 'addresses', 'payments', 'status_history',
@@ -375,22 +278,17 @@ class OrderDelete
                 $order->setData($key, $value);
             }
         }
-        
+
         $order->setId(null);
-        // Attempt to restore original Entity ID if available and free
         if ($originalId) {
             try {
-                // Check if ID is taken
                 $this->orderRepository->get($originalId);
-                // If we are here, ID exists. Use new ID (already null).
             } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-                // ID is free, force it.
                 $order->setEntityId($originalId);
-                $order->isObjectNew(true); // Force INSERT with specific ID
+                $order->isObjectNew(true);
             }
         }
 
-        // 3. Addresses
         if (isset($orderData['addresses'])) {
             foreach ($orderData['addresses'] as $addrType => $addrData) {
                 if (empty($addrData)) {
@@ -400,14 +298,12 @@ class OrderDelete
                 $address->setData($addrData);
                 $address->setId(null);
                 $address->setParentId(null);
-                // Ensure type is set if key-based
                 if ($addrType == 'billing' && !$address->getAddressType()) {
                     $address->setAddressType('billing');
                 }
                 if ($addrType == 'shipping' && !$address->getAddressType()) {
                     $address->setAddressType('shipping');
                 }
-                
                 if ($address->getAddressType() == 'billing') {
                     $order->setBillingAddress($address);
                 } else {
@@ -416,10 +312,8 @@ class OrderDelete
             }
         }
 
-        // 4. Items (with Parent/Child linkage)
         if (isset($orderData['items'])) {
             $itemMap = [];
-            // Pass 1: Create objects
             foreach ($orderData['items'] as $itemData) {
                 $item = $this->orderItemFactory->create();
                 $item->setData($itemData);
@@ -427,19 +321,17 @@ class OrderDelete
                 $item->setOrderId(null);
                 $itemMap[$itemData['item_id']] = $item;
             }
-            // Pass 2: Link and Add
             foreach ($orderData['items'] as $itemData) {
                 $item = $itemMap[$itemData['item_id']];
                 if (!empty($itemData['parent_item_id']) && isset($itemMap[$itemData['parent_item_id']])) {
                     $parent = $itemMap[$itemData['parent_item_id']];
                     $item->setParentItem($parent);
-                    $item->setParentItemId(null); // Clear ID dependency, rely on object
+                    $item->setParentItemId(null);
                 }
                 $order->addItem($item);
             }
         }
 
-        // 5. Payment
         if (isset($orderData['payments'])) {
             foreach ($orderData['payments'] as $paymentData) {
                 $payment = $this->orderPaymentFactory->create();
@@ -447,15 +339,13 @@ class OrderDelete
                 $payment->setId(null);
                 $payment->setParentId(null);
                 $order->setPayment($payment);
-                break; // Take primary payment
+                break;
             }
         }
 
-        // 6. Save (This generates new IDs)
         $this->orderRepository->save($order);
         $newOrderId = $order->getEntityId();
 
-        // 7. Status History (needs Order ID)
         if (isset($orderData['status_history'])) {
             foreach ($orderData['status_history'] as $histData) {
                 $history = $this->orderStatusHistoryFactory->create();
@@ -466,31 +356,17 @@ class OrderDelete
             }
         }
 
-        // Log and Clean up Trash
         $this->logAction($trash->getIncrementId(), 'Restore', 'Order restored. New Entity ID: ' . $newOrderId);
         $trash->delete();
 
         return true;
     }
-    
-    /**
-     * Purge old trash records
-     *
-     * @return void
-     */
+
     public function purgeTrash()
     {
-        // Logic to delete old trash records
-        // TODO: Implement later
         $this->logger->info('Purge Trash triggered but not implemented.');
     }
 
-    /**
-     * Delete item from trash permanently
-     *
-     * @param int $trashId
-     * @return void
-     */
     public function deleteTrashItem($trashId)
     {
         $trash = $this->trashFactory->create()->load($trashId);
