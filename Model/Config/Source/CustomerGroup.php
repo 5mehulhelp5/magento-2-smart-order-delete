@@ -43,12 +43,14 @@ class CustomerGroup implements OptionSourceInterface
             
             foreach ($groups->getItems() as $group) {
                 $options[] = [
-                    'value' => (string)$group->getId(), // cast to string to prevent '0' being evaluated as empty in some admin UI versions
+                    // cast to string to prevent '0' being evaluated as empty in some admin UI versions
+                    'value' => (string)$group->getId(),
                     'label' => $group->getCode()
                 ];
             }
         } catch (\Exception $e) {
             // Fallback empty if repository fails
+            unset($e);
         }
         
         return $options;
