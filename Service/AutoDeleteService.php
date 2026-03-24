@@ -57,6 +57,11 @@ class AutoDeleteService
      */
     public function processAutoDelete(bool $forceRun = false): int
     {
+        $registry = \Magento\Framework\App\ObjectManager::getInstance()->get(\Magento\Framework\Registry::class);
+        if (!$registry->registry("isSecureArea")) {
+            $registry->register("isSecureArea", true);
+        }
+
         $moduleEnabled = $this->isModuleEnabled();
         $autoEnabled   = $this->isAutoDeleteEnabled();
 
