@@ -90,8 +90,10 @@ class OrderDelete
     /**
      * @var mixed
      */
-    protected $orderStatusHistoryFactory,
-        Registry $registry;
+    protected $orderStatusHistoryFactory;
+    /**
+     * @var \Magento\Framework\Registry
+     */
     protected $registry;
 
     /**
