@@ -90,7 +90,9 @@ class OrderDelete
     /**
      * @var mixed
      */
-    protected $orderStatusHistoryFactory;
+    protected $orderStatusHistoryFactory,
+        Registry $registry;
+    protected $registry;
 
     /**
      * @param OrderRepositoryInterface $orderRepository
@@ -108,7 +110,8 @@ class OrderDelete
      * @param \Magento\Sales\Model\Order\ItemFactory $orderItemFactory
      * @param \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory
      * @param \Magento\Sales\Model\Order\PaymentFactory $orderPaymentFactory
-     * @param \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory
+     * @param \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory,
+        Registry $registry
      */
     public function __construct(
         OrderRepositoryInterface $orderRepository,
@@ -126,7 +129,8 @@ class OrderDelete
         \Magento\Sales\Model\Order\ItemFactory $orderItemFactory,
         \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory,
         \Magento\Sales\Model\Order\PaymentFactory $orderPaymentFactory,
-        \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory
+        \Magento\Sales\Model\Order\Status\HistoryFactory $orderStatusHistoryFactory,
+        Registry $registry
     ) {
         $this->orderRepository = $orderRepository;
         $this->orderResource = $orderResource;
@@ -144,6 +148,7 @@ class OrderDelete
         $this->orderAddressFactory = $orderAddressFactory;
         $this->orderPaymentFactory = $orderPaymentFactory;
         $this->orderStatusHistoryFactory = $orderStatusHistoryFactory;
+        $this->registry = $registry;
     }
 
     /**
@@ -179,8 +184,16 @@ class OrderDelete
 
             // Direct ResourceModel delete — bypasses repository-level
             // CouldNotDeleteException / StateException added in Magento 2.4.7+.
+            $isSecure = $this->registry->registry('isSecureArea');
+            if (!$isSecure) {
+                $this->registry->register('isSecureArea', true);
+            }
+
             $this->orderResource->delete($order);
 
+            if (!$isSecure) {
+                $this->registry->unregister('isSecureArea');
+            }
             $this->logAction($incrementId, $actionType, 'Order deleted successfully.');
 
             return true;
