@@ -9,6 +9,7 @@ use Thinkbeat\SmartOrderDelete\Model\LogFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Framework\Registry;
 use Magento\Sales\Model\ResourceModel\Order\Invoice\CollectionFactory as InvoiceCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Shipment\CollectionFactory as ShipmentCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Creditmemo\CollectionFactory as CreditmemoCollectionFactory;
