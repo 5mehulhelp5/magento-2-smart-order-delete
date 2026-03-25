@@ -58,5 +58,33 @@ bin/magento order:delete --id=000000001,000000002
 - Magento 2.4.x
 - PHP 7.4, 8.1, 8.2
 
+## Cron Setup
+To ensure the **Auto Delete** and **Auto-Purge** features work automatically, Magento's master cron job must be configured on your server to run every minute.
+
+### 1. Server Cron Configuration (cPanel / aaPanel / Ubuntu)
+Set up a daily cron (or minute-by-minute shell task) for the user that owns the web files (usually `www-data` or `www`). **Do not run this as ROOT!**
+
+**Example crontab entry:**
+```bash
+* * * * * /usr/bin/php /path/to/your/magento2/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> /path/to/your/magento2/var/log/magento.cron.log
+```
+*In a tool like **aaPanel**: Create a "Shell Script" task, set Execute Cycle to "N Minutes: 1", select the `www` user, and use the script `cd /your/magento/dir && php bin/magento cron:run`.*
+
+### 2. Module Cron Configuration
+The module comes with two built-in cron jobs:
+- **Auto Delete** (`thinkbeat_smartdelete_auto_delete`): Can be scheduled via Admin Panel.
+- **Auto Purge** (`thinkbeat_smartdelete_auto_purge`): Runs automatically at `0 2 * * *` (2:00 AM daily).
+
+**Configure Auto Delete via Admin:**
+1. Go to **Stores > Configuration > Thinkbeat > Smart Order Delete**.
+2. Expand the **Auto Delete** section.
+3. Update the **Cron Expression** field (e.g., `0 1 * * *` for 1:00 AM daily) and click **Save Config**.
+4. Flush cache: `bin/magento cache:clean config`
+
+*(Optional) Run Manually via CLI for Testing:*
+```bash
+bin/magento cron:run --group=default
+```
+
 ## Support
 Thinkbeat
