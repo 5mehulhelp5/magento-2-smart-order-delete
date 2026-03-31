@@ -65,18 +65,22 @@
                     <comment>Orders older than this many days (e.g., 7) will be candidates for deletion.</comment>
                 </field>
                 <field id="order_status" translate="label" type="multiselect" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <can_be_empty>1</can_be_empty>
                     <label>Order Status</label>
                     <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                 </field>
                 <field id="customer_groups" translate="label" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <can_be_empty>1</can_be_empty>
                     <label>Customer Group(s)</label>
                     <source_model>Thinkbeat\SmartOrderDelete\Model\Config\Source\CustomerGroup</source_model>
                 </field>
                 <field id="store_ids" translate="label" type="multiselect" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <can_be_empty>1</can_be_empty>
                     <label>Store View(s)</label>
                     <source_model>Magento\Store\Model\System\Store</source_model>
                 </field>
                 <field id="shipping_countries" translate="label" type="multiselect" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <can_be_empty>1</can_be_empty>
                     <label>Shipping Countries</label>
                     <source_model>Magento\Directory\Model\Config\Source\Country</source_model>
                 </field>

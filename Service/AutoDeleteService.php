@@ -117,18 +117,14 @@ class AutoDeleteService
         $countries = $this->getConfig('thinkbeat_smartdelete/auto_delete/shipping_countries');
         if ($countries !== null && $countries !== '') {
             $countryArray = is_array($countries) ? $countries : explode(',', (string)$countries);
-            $collection->getSelect()->joinLeft(
-                ['soa_shipping' => $collection->getTable('sales_order_address')],
-                'main_table.entity_id = soa_shipping.parent_id AND soa_shipping.address_type = "shipping"',
-                []
-            )->joinLeft(
-                ['soa_billing' => $collection->getTable('sales_order_address')],
-                'main_table.entity_id = soa_billing.parent_id AND soa_billing.address_type = "billing"',
-                []
-            )->where(
-                'COALESCE(soa_shipping.country_id, soa_billing.country_id) IN (?)',
-                $countryArray
-            );
+            $addressTable = $collection->getTable('sales_order_address');
+            $countriesStr = "'" . implode("','", $countryArray) . "'";
+            
+            $collection->getSelect()->where(sprintf(
+                "EXISTS (SELECT 1 FROM %s AS soa WHERE soa.parent_id = main_table.entity_id AND soa.address_type IN ('shipping', 'billing') AND soa.country_id IN (%s))",
+                $addressTable,
+                $countriesStr
+            ));
         }
 
         // 6. Max Order Total
