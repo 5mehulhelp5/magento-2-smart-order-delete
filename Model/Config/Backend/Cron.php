@@ -7,10 +7,9 @@ use Magento\Framework\App\Config\Storage\WriterInterface;
 /**
  * Cron backend model.
  *
- * Magento 2.4.7+ compatibility: removed Magento\Framework\Registry from
- * constructor — it was only passed to parent::__construct() and served
- * no functional purpose. AbstractModel still supports it but injecting
- * the deprecated Registry via DI triggers deprecation warnings in 2.4.7+.
+ * Magento 2.4.8+/PHP 8.4 compatibility:
+ * constructor resource arguments are explicitly nullable to avoid
+ * implicit-nullable deprecation notices during DI compilation.
  */
 class Cron extends Value
 {
@@ -37,8 +36,8 @@ class Cron extends Value
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
         \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList,
         WriterInterface $configWriter,
-        \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
-        \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
+        ?\Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
+        ?\Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
         $this->configWriter = $configWriter;
