@@ -7,9 +7,10 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollection
 use Thinkbeat\SmartOrderDelete\Model\TrashFactory;
 use Thinkbeat\SmartOrderDelete\Model\LogFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Backend\Model\Auth\Session as AuthSession;
+use Magento\Backend\Model\Auth\SessionFactory as AuthSessionFactory;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\Registry;
+use Magento\Framework\App\State;
 use Magento\Sales\Model\ResourceModel\Order\Invoice\CollectionFactory as InvoiceCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Shipment\CollectionFactory as ShipmentCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Creditmemo\CollectionFactory as CreditmemoCollectionFactory;
@@ -50,7 +51,11 @@ class OrderDelete
     /**
      * @var mixed
      */
-    protected $authSession;
+    protected $authSessionFactory;
+    /**
+     * @var State
+     */
+    protected $appState;
     /**
      * @var mixed
      */
@@ -102,7 +107,7 @@ class OrderDelete
      * @param TrashFactory $trashFactory
      * @param LogFactory $logFactory
      * @param ScopeConfigInterface $scopeConfig
-     * @param AuthSession $authSession
+    * @param AuthSessionFactory $authSessionFactory
      * @param Json $json
      * @param InvoiceCollectionFactory $invoiceCollectionFactory
      * @param ShipmentCollectionFactory $shipmentCollectionFactory
@@ -121,12 +126,13 @@ class OrderDelete
         TrashFactory $trashFactory,
         LogFactory $logFactory,
         ScopeConfigInterface $scopeConfig,
-        AuthSession $authSession,
+        AuthSessionFactory $authSessionFactory,
         Json $json,
         InvoiceCollectionFactory $invoiceCollectionFactory,
         ShipmentCollectionFactory $shipmentCollectionFactory,
         CreditmemoCollectionFactory $creditmemoCollectionFactory,
         LoggerInterface $logger,
+        State $appState,
         \Magento\Sales\Model\OrderFactory $orderFactory,
         \Magento\Sales\Model\Order\ItemFactory $orderItemFactory,
         \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory,
@@ -139,12 +145,13 @@ class OrderDelete
         $this->trashFactory = $trashFactory;
         $this->logFactory = $logFactory;
         $this->scopeConfig = $scopeConfig;
-        $this->authSession = $authSession;
+        $this->authSessionFactory = $authSessionFactory;
         $this->json = $json;
         $this->invoiceCollectionFactory = $invoiceCollectionFactory;
         $this->shipmentCollectionFactory = $shipmentCollectionFactory;
         $this->creditmemoCollectionFactory = $creditmemoCollectionFactory;
         $this->logger = $logger;
+        $this->appState = $appState;
         $this->orderFactory = $orderFactory;
         $this->orderItemFactory = $orderItemFactory;
         $this->orderAddressFactory = $orderAddressFactory;
@@ -337,7 +344,12 @@ class OrderDelete
     protected function getAdminUsername(): string
     {
         try {
-            $user = $this->authSession->getUser();
+            // Avoid backend session initialization in setup/install or CLI contexts.
+            if ($this->appState->getAreaCode() !== \Magento\Backend\App\Area\FrontNameResolver::AREA_CODE) {
+                return 'System/CLI';
+            }
+
+            $user = $this->authSessionFactory->create()->getUser();
             return $user ? $user->getUsername() : 'System/CLI';
         } catch (\Throwable $e) {
             return 'System/CLI';
