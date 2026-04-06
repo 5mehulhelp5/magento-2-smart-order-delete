@@ -8,9 +8,11 @@ use Thinkbeat\SmartOrderDelete\Model\TrashFactory;
 use Thinkbeat\SmartOrderDelete\Model\LogFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Backend\Model\Auth\Session as AuthSession;
+use Magento\Backend\Model\Auth\SessionFactory as AuthSessionFactory;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\Registry;
 use Magento\Framework\App\State;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Sales\Model\ResourceModel\Order\Invoice\CollectionFactory as InvoiceCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Shipment\CollectionFactory as ShipmentCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Creditmemo\CollectionFactory as CreditmemoCollectionFactory;
@@ -49,9 +51,9 @@ class OrderDelete
      */
     protected $scopeConfig;
     /**
-     * @var mixed
+        * @var ObjectManagerInterface
      */
-    protected $authSession;
+        protected $objectManager;
     /**
      * @var State
      */
@@ -107,7 +109,6 @@ class OrderDelete
      * @param TrashFactory $trashFactory
      * @param LogFactory $logFactory
      * @param ScopeConfigInterface $scopeConfig
-    * @param AuthSession $authSession
      * @param Json $json
      * @param InvoiceCollectionFactory $invoiceCollectionFactory
      * @param ShipmentCollectionFactory $shipmentCollectionFactory
@@ -126,13 +127,13 @@ class OrderDelete
         TrashFactory $trashFactory,
         LogFactory $logFactory,
         ScopeConfigInterface $scopeConfig,
-        AuthSession $authSession,
         Json $json,
         InvoiceCollectionFactory $invoiceCollectionFactory,
         ShipmentCollectionFactory $shipmentCollectionFactory,
         CreditmemoCollectionFactory $creditmemoCollectionFactory,
         LoggerInterface $logger,
         State $appState,
+        ObjectManagerInterface $objectManager,
         \Magento\Sales\Model\OrderFactory $orderFactory,
         \Magento\Sales\Model\Order\ItemFactory $orderItemFactory,
         \Magento\Sales\Model\Order\AddressFactory $orderAddressFactory,
@@ -145,13 +146,13 @@ class OrderDelete
         $this->trashFactory = $trashFactory;
         $this->logFactory = $logFactory;
         $this->scopeConfig = $scopeConfig;
-        $this->authSession = $authSession;
         $this->json = $json;
         $this->invoiceCollectionFactory = $invoiceCollectionFactory;
         $this->shipmentCollectionFactory = $shipmentCollectionFactory;
         $this->creditmemoCollectionFactory = $creditmemoCollectionFactory;
         $this->logger = $logger;
         $this->appState = $appState;
+        $this->objectManager = $objectManager;
         $this->orderFactory = $orderFactory;
         $this->orderItemFactory = $orderItemFactory;
         $this->orderAddressFactory = $orderAddressFactory;
@@ -349,7 +350,15 @@ class OrderDelete
                 return 'System/CLI';
             }
 
-            $user = $this->authSession->getUser();
+            $user = null;
+
+            // Support environments that wire either Auth Session or SessionFactory.
+            try {
+                $user = $this->objectManager->get(AuthSession::class)->getUser();
+            } catch (\Throwable $e) {
+                $user = $this->objectManager->get(AuthSessionFactory::class)->create()->getUser();
+            }
+
             return $user ? $user->getUsername() : 'System/CLI';
         } catch (\Throwable $e) {
             return 'System/CLI';
