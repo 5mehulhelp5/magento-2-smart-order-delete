@@ -7,7 +7,7 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollection
 use Thinkbeat\SmartOrderDelete\Model\TrashFactory;
 use Thinkbeat\SmartOrderDelete\Model\LogFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Backend\Model\Auth\SessionFactory as AuthSessionFactory;
+use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\Registry;
 use Magento\Framework\App\State;
@@ -51,7 +51,7 @@ class OrderDelete
     /**
      * @var mixed
      */
-    protected $authSessionFactory;
+    protected $authSession;
     /**
      * @var State
      */
@@ -107,7 +107,7 @@ class OrderDelete
      * @param TrashFactory $trashFactory
      * @param LogFactory $logFactory
      * @param ScopeConfigInterface $scopeConfig
-    * @param AuthSessionFactory $authSessionFactory
+    * @param AuthSession $authSession
      * @param Json $json
      * @param InvoiceCollectionFactory $invoiceCollectionFactory
      * @param ShipmentCollectionFactory $shipmentCollectionFactory
@@ -126,7 +126,7 @@ class OrderDelete
         TrashFactory $trashFactory,
         LogFactory $logFactory,
         ScopeConfigInterface $scopeConfig,
-        AuthSessionFactory $authSessionFactory,
+        AuthSession $authSession,
         Json $json,
         InvoiceCollectionFactory $invoiceCollectionFactory,
         ShipmentCollectionFactory $shipmentCollectionFactory,
@@ -145,7 +145,7 @@ class OrderDelete
         $this->trashFactory = $trashFactory;
         $this->logFactory = $logFactory;
         $this->scopeConfig = $scopeConfig;
-        $this->authSessionFactory = $authSessionFactory;
+        $this->authSession = $authSession;
         $this->json = $json;
         $this->invoiceCollectionFactory = $invoiceCollectionFactory;
         $this->shipmentCollectionFactory = $shipmentCollectionFactory;
@@ -349,7 +349,7 @@ class OrderDelete
                 return 'System/CLI';
             }
 
-            $user = $this->authSessionFactory->create()->getUser();
+            $user = $this->authSession->getUser();
             return $user ? $user->getUsername() : 'System/CLI';
         } catch (\Throwable $e) {
             return 'System/CLI';
