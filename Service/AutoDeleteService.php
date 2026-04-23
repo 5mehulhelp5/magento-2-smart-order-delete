@@ -135,17 +135,25 @@ class AutoDeleteService
         $this->logger->info('SmartOrderDelete Query: ' . $collection->getSelect()->__toString());
         $this->logger->info('SmartOrderDelete Total matched orders: ' . $collection->getSize());
 
+        $collection->setPageSize(100);
+        $pages = $collection->getLastPageNumber();
         $count = 0;
-        foreach ($collection as $order) {
-            try {
-                $this->orderDeleteService->deleteOrder($order->getId());
-                $count++;
-            } catch (\Throwable $e) {
-                $this->logger->error(sprintf(
-                    'SmartOrderDelete: Failed for Order %s — %s',
-                    $order->getIncrementId(),
-                    $e->getMessage()
-                ));
+
+        for ($currentPage = 1; $currentPage <= $pages; $currentPage++) {
+            $collection->clear();
+            $collection->setCurPage(1); // Always load page 1 since items are being deleted
+
+            foreach ($collection as $order) {
+                try {
+                    $this->orderDeleteService->deleteOrder($order->getId());
+                    $count++;
+                } catch (\Throwable $e) {
+                    $this->logger->error(sprintf(
+                        'SmartOrderDelete: Failed for Order %s — %s',
+                        $order->getIncrementId(),
+                        $e->getMessage()
+                    ));
+                }
             }
         }
 

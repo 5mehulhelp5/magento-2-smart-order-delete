@@ -109,6 +109,8 @@ class OrderDelete
      * @param TrashFactory $trashFactory
      * @param LogFactory $logFactory
      * @param ScopeConfigInterface $scopeConfig
+        * @param mixed $authSession Backward-compat placeholder for environments
+        *                           still injecting backend auth session at arg #6.
      * @param Json $json
      * @param InvoiceCollectionFactory $invoiceCollectionFactory
      * @param ShipmentCollectionFactory $shipmentCollectionFactory
@@ -127,6 +129,7 @@ class OrderDelete
         TrashFactory $trashFactory,
         LogFactory $logFactory,
         ScopeConfigInterface $scopeConfig,
+        $authSession,
         Json $json,
         InvoiceCollectionFactory $invoiceCollectionFactory,
         ShipmentCollectionFactory $shipmentCollectionFactory,
@@ -146,13 +149,13 @@ class OrderDelete
         $this->trashFactory = $trashFactory;
         $this->logFactory = $logFactory;
         $this->scopeConfig = $scopeConfig;
-        $this->json = $json;
         $this->invoiceCollectionFactory = $invoiceCollectionFactory;
         $this->shipmentCollectionFactory = $shipmentCollectionFactory;
         $this->creditmemoCollectionFactory = $creditmemoCollectionFactory;
         $this->logger = $logger;
         $this->appState = $appState;
         $this->objectManager = $objectManager;
+        $this->json = $json;
         $this->orderFactory = $orderFactory;
         $this->orderItemFactory = $orderItemFactory;
         $this->orderAddressFactory = $orderAddressFactory;
